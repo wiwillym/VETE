@@ -1,9 +1,6 @@
 import enum
 import os
 import copy
-
-from scipy.sparse import data
-
 import clip
 import gensim
 import umap
@@ -12,7 +9,7 @@ import pandas as pd
 import numpy as np
 import gensim.downloader as api
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import AnyStr, OrderedDict
+from typing import OrderedDict
 from operator import itemgetter
 from ssearch import avg_precision as ssearch_avg_precision
 from tqdm import tqdm
@@ -20,7 +17,7 @@ import scipy.spatial as sp
 import statistics
 from sentence_transformers import  SentenceTransformer
 import torch
-from transformers import BertModel, BertTokenizer, CLIPConfig, CLIPModel, CLIPTokenizer
+from transformers import BertModel, BertTokenizer
 
 class TextSearch:
     def __init__(self, model_name="word2vec", filter_by_nwords=False, build=True, dataset="Pepeganga"):
@@ -31,10 +28,10 @@ class TextSearch:
         self.model_name=model_name
         ########## TESTING WITH CLIP VISUAL ENCODER AND ROBERTA ##########
         ##################################################################
-        self.data_path = "F:/Documentos Universidad/MEMORIA/Datasets/Catalogo_{}/data/".format(dataset)
+        self.data_path = "./Datasets/Catalogo_{}/data/".format(dataset)
         self.q_file_path = self.data_path + "questions_dataset.xlsx"
         self.a_file_path = self.data_path + "answers_dataset.xlsx"
-        self.visual_text_embeddings_path = "F:/Documentos Universidad/MEMORIA/visual_text_embeddings/{}/{}".format(dataset, self.model_name) 
+        self.visual_text_embeddings_path = "./visual_text_embeddings/{}/{}".format(dataset, self.model_name) 
         self.a_df = None
         self.q_df = None
         self.data = None
@@ -146,8 +143,8 @@ class TextSearch:
         return a_df
 
     def set_dataframes(self):
-        #if self.build:
-        if False:
+        if self.build:
+        #if False:
             questions = pd.read_excel(self.q_file_path)
             answers = pd.read_excel(self.a_file_path)
             q_df, a_df, a_data, q_data, product_names, q_product_names = self.build_dataframes(questions, answers, self.filter)
@@ -197,7 +194,7 @@ class TextSearch:
 
         return q_df, a_df, data, q_data, product_names, q_product_names
 
-    def efficient_cosine_similarity(self):
+    def cosine_sim(self):
         data = self.data.astype(np.float32)
         #data = self.data
         print("Data shape: ", np.shape(data))
@@ -255,7 +252,7 @@ class TextSearch:
             return new_embeddings
         
         ################
-        #self.efficient_cosine_similarity()
+        #self.cosine_sim()
         ################
 
         aux_filenames = np.array([os.path.splitext(os.path.basename(file))[0] for file in filenames])
@@ -319,107 +316,6 @@ class TextSearch:
 
         return new_embeddings
 
-    def adjust_visual_embeddings_2(self, embeddings, filenames, k, method='mean', a=0.9, use_query=True):
-        new_embeddings = []
-        
-        embeddings_files = [f for f in os.listdir(self.visual_text_embeddings_path)]
-        if use_query:    
-            generated_file = "k_{}_a_{}.txt".format(str(k), str(a).replace(".", ""))
-        else:
-            generated_file = "k_{}_a_{}_noquery.txt".format(str(k), str(a).replace(".", ""))
-        print("embeddings_files: ", embeddings_files)
-        print("generated_file: ", generated_file)
-        #if generated_file in embeddings_files:
-        #    print("Found file with adjusted embeddings. Loading...")
-        #    new_embeddings = np.loadtxt("F:/Documentos Universidad/MEMORIA/visual_text_embeddings/{}".format(generated_file), delimiter='\t')
-        #    return new_embeddings
-        
-        self.efficient_cosine_similarity()
-
-        aux_filenames = np.array([os.path.splitext(os.path.basename(file))[0] for file in filenames])
-        
-        filenames_np = np.array(filenames)
-        print("filenames: {}".format(filenames_np))
-        ids = np.arange(len(embeddings))
-        print("ids: {}".format(ids))
-
-        #########
-        #product_names = os.path.splitext(os.path.basename(filenames[ids.astype(int)]))[0]
-        print("product_names: {}".format(aux_filenames))
-        print("self.product_names: {}".format(self.product_names))
-        
-        x = self.product_names
-        y = aux_filenames
-
-        index = np.argsort(x)
-        sorted_x = x[index]
-        sorted_index = np.searchsorted(sorted_x, y)
-
-        yindex = np.take(index, sorted_index, mode="clip")
-        mask = x[yindex] != y
-
-        text_idxs = np.ma.array(yindex, mask=mask)
-
-        print("text_idxs: {}".format(text_idxs))
-        '''
-        try:
-            text_idx = np.where(self.product_names == product_name)[0][0]
-        except:
-            print("Product {} has a problem. Setting original embedding.".format(product_name))
-            new_embeddings.append(embedding)
-            continue
-        '''
-        # top-k ids de los productos ordenados por similitud al producto base
-        all_neighbors_idx = self.sorted_similarity[text_idxs] #[:k]
-        print("all neighbors_idx: {}".format(all_neighbors_idx))
-        neighbors_idx = all_neighbors_idx[:, :k]
-        print("neighbors_idx: {}".format(neighbors_idx))
-
-        # append text_idx (probar sin)
-        #if use_query:
-        #    neighbors_idx = np.insert(neighbors_idx, 0, text_idx)
-
-        # obtenemos los nombres de los productos
-        neighbors_names = self.product_names[neighbors_idx]
-        print("neighbors_names: {}".format(neighbors_names))
-
-        # obtenemos los indices de los productos que se usaran para generar el nuevo embedding 
-        #visual_idx = np.where(aux_filenames == neighbors_names)
-        
-        for i, nn in enumerate(tqdm(neighbors_names)):
-            visual_idx = np.where(np.in1d(aux_filenames, nn))[0]
-            #visual_idx = np.nonzero(np.in1d(aux_filenames,neighbors_names))
-
-            # obtenemos los embeddings visuales
-            visual_embeddings = embeddings[visual_idx]
-
-            # calculamos el promedio
-            np_mean = np.mean(visual_embeddings, axis=0)
-            mean_vector = np_mean.tolist()
-
-
-            base_embedding = a * np.array(embeddings[i])
-            adjust_embedding = (1 - a) * np.array(mean_vector)
-            new_embedding = base_embedding + adjust_embedding
-            
-            #print("Embedding original: {}".format(embeddings[i]))
-            #print("Aux filenames: {}".format(aux_filenames))
-            #print("text_idx: {}".format(text_idx))
-            #print("Neighbors names: {}".format(neighbors_names))
-            #print("Neighbors idx: {}".format(visual_idx))
-            #print("Neighbors embeddings: {}".format(visual_embeddings))
-            #print("np_mean: {}".format(np_mean))
-            #print("Mean Vector: {}".format(mean_vector))
-            #print("Base Embedding: {}".format(base_embedding))
-            #print("Adjust Embedding: {}".format(adjust_embedding))
-            #print("Nuevo embedding: {}".format(new_embedding))
-
-            new_embeddings.append(new_embedding)
-
-        #np.savetxt("F:/Documentos Universidad/MEMORIA/visual_text_embeddings/{}".format(generated_file), np.array(new_embeddings), delimiter='\t')
-        
-        return new_embeddings
-
     def search_product(self, product, k=20):
         q_file_path = self.q_file_path
         a_file_path = self.a_file_path
@@ -471,7 +367,7 @@ class TextSearch:
     def eval_model(self, k=20, use_umap=False, n_components=None, seed=42):
 
         self.set_dataframes()
-        #self.efficient_cosine_similarity()
+        #self.cosine_sim()
 
         #ap_arr, res = self.get_results2(q_df, a_df, k)
         q_data = self.q_data

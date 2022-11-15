@@ -25,6 +25,7 @@ RealQ/
 RealQ_2/
 RealQ_3/
 test_images/
+testing/
 recall_precision/
 bert_embeddings.py
 cprofile_stats.prof
@@ -35,3 +36,5 @@ __pycache__/
 *.png
 *.jpeg
 *.jpg
+visual_text_nn.py
+roc_curve.py

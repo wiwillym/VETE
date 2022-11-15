@@ -56,14 +56,3 @@ parameters = {"Base": (None),
                 "k_3_a_03_mean": (3, 0.3, None, False, 'mean'),
                 "k_3_a_02_mean": (3, 0.2, None, False, 'mean'),
                 "k_3_a_01_mean": (3, 0.1, None, False, 'mean'),}
-
-
-best_parameters = {"Base": (None),
-                    "k_3_a_05_mean": (3, 0.5, None, False, 'mean'),
-                    "k_5_a_06_mean": (5, 0.6, None, False, 'mean'),
-                    "k_7_a_03_mean": (7, 0.3, None, False, 'mean'),
-                    "k_5_a_02_mean": (5, 0.2, None, False, 'mean'),
-                    "k_3_a_03_mean": (3, 0.3, None, False, 'mean')
-                    }
-
-test_parameters = {"k_3_a_09_mean": (3, 0.9, None, False, 'mean')}

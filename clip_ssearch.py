@@ -1,20 +1,17 @@
-from transformers import CLIPModel, CLIPProcessor, CLIPConfig
 import sys
 import os
 import clip
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import torch
 from tqdm import tqdm
-import tensorflow as tf
 #Please, change the following path to where convnet2 can be located
-sys.path.append("F:/Documentos Universidad\MEMORIA\convnet_visual_attributes\convnet2")
+sys.path.append("..\convnet2")
 import datasets.data as data
 import utils.configuration as conf
 import utils.imgproc as imgproc
 import skimage.transform as trans
 from scipy import spatial
-from pprint import pprint
 
 class CLIPSSearch:
     def __init__(self, config_file, model_name, checkpoint_path=None):
@@ -168,11 +165,8 @@ class CLIPSSearch:
             
             adjust = all(x == categories[0] for x in categories)
             if adjust:
-                #print("Decided to adjust")
                 return new_query
             else:
-                #print("Decided to NOT adjust")
-                #return query
                 return query
 
         return new_query
@@ -215,12 +209,9 @@ class CLIPSSearch:
             cos_sim_3 = 1 - spatial.distance.cosine(categories[1], categories[2])
             cos_sim_list = [cos_sim_1, cos_sim_2, cos_sim_3]
             adjust = all(cos_sim >= 0.8 for cos_sim in cos_sim_list)
-            #adjust = True
             if adjust:
-                #print("Decided to adjust")
                 return new_query
             else:
-                #print("NOT adjusting")
                 return query
                 #return new_query
         return new_query
